@@ -1,7 +1,5 @@
 # Use the official Nginx image
 FROM nginx:alpine
-# Use the Chainguard NGINX image as the base image
-# FROM cgr.dev/chainguard/nginx:latest
 
 # Copy the certificate and key to the container
 COPY localhost.pem /etc/ssl/certs/localhost.pem

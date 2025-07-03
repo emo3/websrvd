@@ -27,7 +27,6 @@ Create a new directory for your project:
 
 ```bash
 # Do these steps only ONCE!
-cd ~/code/cookbooks
 mkdir websrvd
 cd websrvd
 mkcert -install
@@ -40,12 +39,19 @@ mkcert localhost
 - docker-compose.yml
 - nginx.conf
 
-## Build and run Docker
+## Initial Section
+
+```sh
+# download latest nginx:alpine
+docker pull nginx:alpine
+```
+
+## Build and run with Docker commands
 
 Build Docker commands
 
 ```sh
-# download latest nginx:alpine and call it websrvd
+# and use it to create websrvd
 docker build -t websrvd .
 # run the code in above image
 ## -d = detach mode; p = port; -v = directories that nginx can serve
@@ -60,42 +66,35 @@ docker remove websrvd
 docker image rm websrvd
 ```
 
+## Build and run with Docker compose commands
+
 Build with docker compose. This will download image and run container  
 The option -d = detach mode
 
-`docker compose up --build -d`
+```sh
+docker compose up --build -d`
+```
 
 If you make code changes: Stop and remove containers, networks
 
-`docker compose down`
+```sh
+docker compose down`
+```
 
 Then re-run compose up  
 
-## Verify
-
-Open your web browser and navigate to <https://localhost>. You should NOT see a warning about the self-signed certificate. Also navigate to other directories listed.
-
 ## Using Terraform with Docker
 
-You can provision the Nginx container with SSL using Terraform:
-
-1. **Set certificate paths** in `terraform.tfvars`:
-
-    ```hcl
-    cert_pem_path = "/absolute/path/to/localhost.pem"
-    cert_key_path = "/absolute/path/to/localhost-key.pem"
-    ```
-
-    Replace the paths above with the full paths to your certificate files.
-
-2. **Initialize and apply Terraform:**
+1. **Initialize and apply Terraform:**
 
     ```sh
     terraform init
     terraform apply
     ```
 
----
+## Verify
+
+Open your web browser and navigate to <https://localhost>. You should NOT see a warning about the self-signed certificate. Also navigate to other directories listed.
 
 ## Volume Mount Paths
 

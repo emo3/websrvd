@@ -88,7 +88,13 @@ Then re-run compose up
 1. **Initialize and apply Terraform:**
 
     ```sh
-    terraform init
+    # Reconfigure a backend, ignoring any saved configuration.
+    terraform init -reconfigure
+    # Make sure the terraform files are valid
+    terraform validate
+    # format the files, if you want
+    terraform fmt -diff -recursive
+    # Apply the values, add "-auto-approve", if you do not want it to prompt
     terraform apply
     ```
 

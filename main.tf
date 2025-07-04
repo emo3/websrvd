@@ -12,7 +12,7 @@ provider "docker" {
 }
 
 resource "docker_image" "websrvd" {
-  name         = "websrvd:latest"
+  name = "websrvd:latest"
   build {
     context    = "."
     dockerfile = "Dockerfile"

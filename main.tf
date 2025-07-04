@@ -19,14 +19,17 @@ resource "docker_image" "websrvd" {
   }
 }
 
-resource "docker_container" "nginx_server" {
+resource "docker_container" "nginx" {
+  name  = "websrvd"
   image = docker_image.websrvd.name
-  name  = "nginx_server"
 
   ports {
     internal = 443
     external = 443
   }
 
-  restart = "always"
+  volumes {
+    host_path      = "${pathexpand("~")}/repos"
+    container_path = "/usr/share/nginx/html"
+  }
 }

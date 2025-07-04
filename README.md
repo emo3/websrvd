@@ -38,6 +38,7 @@ mkcert localhost
 - Dockerfile
 - docker-compose.yml
 - nginx.conf
+- **You must generate `localhost.pem` and `localhost-key.pem` using mkcert before building the Docker image.**
 
 ## Initial Section
 
@@ -94,10 +95,10 @@ Then re-run compose up
     terraform validate
     # format the files, if you want
     terraform fmt -diff -recursive
-    # Apply the values, add "-auto-approve", if you do not want it to prompt
-    terraform apply
+    # Apply the values, remove "-auto-approve", if you want it to prompt
+    terraform apply -auto-approve
     ## to remove it
-    terraform destroy
+    terraform destroy -auto-approve
     ```
 
 ## Verify

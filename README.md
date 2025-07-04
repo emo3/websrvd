@@ -72,13 +72,13 @@ Build with docker compose. This will download image and run container
 The option -d = detach mode
 
 ```sh
-docker compose up --build -d`
+docker compose up --build -d
 ```
 
 If you make code changes: Stop and remove containers, networks
 
 ```sh
-docker compose down`
+docker compose down
 ```
 
 Then re-run compose up  
@@ -96,6 +96,8 @@ Then re-run compose up
     terraform fmt -diff -recursive
     # Apply the values, add "-auto-approve", if you do not want it to prompt
     terraform apply
+    ## to remove it
+    terraform destroy
     ```
 
 ## Verify

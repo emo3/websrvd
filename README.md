@@ -1,14 +1,14 @@
 # Running a Local HTTPS Server with Docker
 
-This guide will help you set up a local HTTPS server using Docker with Nginx
-and self-signed SSL certificates. The main reason for using docker is the space
-taken up by servers and how long it takes to build/rebuild the servers.
+This guide will help you set up a local HTTPS server using Docker with Nginx and self-signed SSL certificates. The main reason for using Docker is the space taken up by servers and how long it takes to build/rebuild the servers.
 
-## Prerequisite: Install mkcert
+## Prerequisites
+
+### 1. Install mkcert
 
 To generate trusted local SSL certificates, install [mkcert](https://github.com/FiloSottile/mkcert):
 
-```sh
+```bash
 # macOS (using Homebrew)
 brew install mkcert
 brew install nss # if you use Firefox
@@ -21,118 +21,245 @@ brew install mkcert
 choco install mkcert
 ```
 
-## Create a Directory for Your Project
+### 2. Set up IP Alias (macOS/Linux)
 
-Create a new directory for your project:
+Create an IP alias for your local server:
 
 ```bash
-# Do these steps only ONCE!
-mkdir websrvd
-cd websrvd
-mkcert -install
-mkcert localhost
+# Add IP alias (run once per boot, or add to startup script)
+sudo ifconfig lo0 alias 10.1.1.30
 ```
 
-## Create files
+### 3. Create Docker Network
 
-- Dockerfile
-- docker-compose.yml
-- nginx.conf
-- **You must generate `localhost.pem` and `localhost-key.pem` using mkcert before building the Docker image.**
+Create a shared Docker network (run once):
 
-## Initial Section
+```bash
+docker network create --driver bridge --subnet=10.1.1.0/24 local_network
+```
 
-```sh
-# download latest nginx:alpine
+## Initial Setup (Run Once)
+
+### 1. Create Project Directory
+
+```bash
+mkdir websrvd
+cd websrvd
+```
+
+### 2. Generate SSL Certificates
+
+```bash
+# Install mkcert root CA
+mkcert -install
+
+# Generate certificates for your domains
+mkcert -cert-file localhost.pem -key-file localhost-key.pem websrv 10.1.1.30 localhost
+```
+
+### 3. Create Required Files
+
+Create these files in your project directory:
+
+- `Dockerfile`
+- `docker-compose.yml`
+- `nginx.conf`
+
+**Important:** You must generate the SSL certificates before building the Docker image.
+
+### 4. Download Base Image (Optional)
+
+```bash
 docker pull nginx:alpine
 ```
 
-## Build and run with Docker commands
+## Configuration Options
 
-Build Docker commands
+This project supports flexible IP configuration through environment variables:
 
-```sh
-# and use it to create websrvd
+### Default Configuration
+
+```bash
+# Uses IP 10.1.1.30 (default)
+docker-compose up -d
+```
+
+### Custom IP Address
+
+```bash
+# Use different IP address
+WEBSRV_IP=10.1.1.50 docker-compose up -d
+
+# Or set permanently
+export WEBSRV_IP=10.1.1.50
+docker-compose up -d
+```
+
+### Using .env File
+
+Create a `.env` file for persistent configuration:
+
+```bash
+echo "WEBSRV_IP=10.1.1.30" > .env
+echo "WEBSRV_PORT=443" >> .env
+```
+
+## Running the Server
+
+### Docker Compose (Recommended)
+
+```bash
+# Build and start the server
+docker-compose up --build -d
+
+# With custom IP
+WEBSRV_IP=10.1.1.31 docker-compose up --build -d
+
+# With custom IP and port
+WEBSRV_IP=10.1.1.31 WEBSRV_PORT=8443 docker-compose up --build -d
+
+# Stop the server
+docker-compose down
+```
+
+### Manual Docker Commands
+
+```bash
+# Build the image
 docker build -t websrvd .
-# run the code in above image
-## -d = detach mode; p = port; -v = directories that nginx can serve
-docker run -d -p 443:443 --name websrvd -v ${HOME}/repos:/usr/share/nginx/html websrvd
-###
-## To cleanup
-# Stop the container
+
+# Run the container
+docker run -d -p 10.1.1.30:443:443 --name websrvd \
+  -v ${HOME}/repos:/usr/share/nginx/html websrvd
+
+# Stop and cleanup
 docker stop websrvd
-# Remove the container
-docker remove websrvd
-# Remove the image, or keep it up to you
-docker image rm websrvd
+docker rm websrvd
+docker rmi websrvd  # Optional: remove image
 ```
 
-## Build and run with Docker compose commands
-
-Build with docker compose. This will download image and run container  
-The option -d = detach mode
-
-```sh
-docker compose up --build -d
-```
-
-If you make code changes: Stop and remove containers, networks
-
-```sh
-docker compose down
-```
-
-Then re-run compose up  
-
-## Using Terraform with Docker
+## Using with Terraform
 
 1. **Initialize and apply Terraform:**
 
-    ```sh
-    # Reconfigure a backend, ignoring any saved configuration.
+    ```bash
+    # Reconfigure backend, ignoring any saved configuration
     terraform init -reconfigure
-    # Make sure the terraform files are valid
+    
+    # Validate terraform files
     terraform validate
-    # format the files, if you want
+    
+    # Format files (optional)
     terraform fmt -diff -recursive
-    # Apply the values, remove "-auto-approve", if you want it to prompt
+    
+    # Apply configuration
     terraform apply -auto-approve
-    ## to remove it
+    
+    # To remove resources
     terraform destroy -auto-approve
     ```
 
-## Verify
+## Verification
 
-Open your web browser and navigate to <https://localhost>. You should NOT see a warning about the self-signed certificate. Also navigate to other directories listed.
+Open your web browser and navigate to:
+
+- `https://websrv/` (using hostname)
+- `https://10.1.1.30/` (using IP address)
+- `https://localhost/` (local access)
+
+You should **NOT** see SSL certificate warnings thanks to mkcert.
 
 ## Volume Mount Paths
 
-When using Docker Compose, volume mount paths must be absolute and OS-specific:
+Volume mount paths must be absolute and OS-specific:
 
-- **macOS/Linux:**
+### macOS/Linux
 
-    ```yaml
-    volumes:
-      - ${HOME}/repos:/usr/share/nginx/html
-    ```
+```yaml
+volumes:
+  - ${HOME}/repos:/usr/share/nginx/html
+```
 
-    Make sure to include the slash after `${HOME}`.
+### Windows (Git Bash/WSL)
 
-- **Windows (Git Bash or WSL):**
+```yaml
+volumes:
+  - /c/Users/<YourUsername>/repos:/usr/share/nginx/html
+```
 
-    ```yaml
-    volumes:
-      - /c/Users/<YourUsername>/repos:/usr/share/nginx/html
-    ```
+### Windows (CMD/PowerShell)  
 
-    Replace `<YourUsername>` with your actual Windows username.
+```yaml
+volumes:
+  - C:\Users\<YourUsername>\repos:/usr/share/nginx/html
+```
 
-- **Windows (CMD/PowerShell):**
+**Note:** The path before the colon is on your host machine; the path after the colon is inside the container.
 
-    ```yaml
-    volumes:
-      - C:\Users\<YourUsername>\repos:/usr/share/nginx/html
-    ```
+## Troubleshooting
 
-**Note:**  
-The path before the colon is the path on your host machine; the path after the colon is inside the container.
+### SSL Certificate Issues
+
+```bash
+# Regenerate certificates if needed
+mkcert -cert-file localhost.pem -key-file localhost-key.pem websrv 10.1.1.30 localhost
+
+# Reinstall mkcert CA
+mkcert -uninstall
+mkcert -install
+```
+
+### Network Connectivity Issues
+
+```bash
+# Test IP alias
+ping -c 1 10.1.1.30
+
+# Check Docker network
+docker network inspect local_network
+
+# Test container connectivity
+curl https://10.1.1.30/
+```
+
+### Useful Commands
+
+```bash
+# View container logs
+docker-compose logs
+
+# Follow logs in real-time
+docker-compose logs -f
+
+# Access container shell
+docker-compose exec nginx sh
+
+# Check running containers and health status
+docker-compose ps
+
+# Check network interfaces
+ifconfig lo0 | grep "inet 10.1.1"
+
+# Run network test script
+./test-setup.sh
+```
+
+## Directory Structure
+
+```text
+websrvd/
+├── Dockerfile
+├── docker-compose.yml
+├── nginx.conf
+├── localhost.pem          # Generated by mkcert
+├── localhost-key.pem      # Generated by mkcert
+├── .env                   # Optional: environment variables
+└── README.md
+```
+
+## Security Notes
+
+- SSL certificates are only trusted on the machine where mkcert was installed
+- This setup is for **local development only** - do not use in production
+- The `server_tokens off` directive in nginx.conf hides version information
+- Rate limiting is configured to prevent abuse

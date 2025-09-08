@@ -28,6 +28,10 @@ override.tf.json
 *.crt
 *.key
 
+# Environment files (may contain sensitive info)
+.env
+.env.*
+
 # Ignore transient lock info files created by terraform apply
 .terraform.tfstate.lock.info
 .terraform.lock.*

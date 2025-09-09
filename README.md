@@ -54,7 +54,7 @@ cd websrvd
 mkcert -install
 
 # Generate certificates for your domains
-mkcert -cert-file localhost.pem -key-file localhost-key.pem websrv 10.1.1.30 localhost
+mkcert -cert-file localhost.pem -key-file localhost-key.pem websrv websrvd-nginx-1 10.1.1.30 localhost
 ```
 
 ### 3. Create Required Files
@@ -81,18 +81,18 @@ This project supports flexible IP configuration through environment variables:
 
 ```bash
 # Uses IP 10.1.1.30 (default)
-docker-compose up -d
+docker compose up -d
 ```
 
 ### Custom IP Address
 
 ```bash
 # Use different IP address
-WEBSRV_IP=10.1.1.50 docker-compose up -d
+WEBSRV_IP=10.1.1.50 docker compose up -d
 
 # Or set permanently
 export WEBSRV_IP=10.1.1.50
-docker-compose up -d
+docker compose up -d
 ```
 
 ### Using .env File
@@ -110,16 +110,16 @@ echo "WEBSRV_PORT=443" >> .env
 
 ```bash
 # Build and start the server
-docker-compose up --build -d
+docker compose up --build -d
 
 # With custom IP
-WEBSRV_IP=10.1.1.31 docker-compose up --build -d
+WEBSRV_IP=10.1.1.31 docker compose up --build -d
 
 # With custom IP and port
-WEBSRV_IP=10.1.1.31 WEBSRV_PORT=8443 docker-compose up --build -d
+WEBSRV_IP=10.1.1.31 WEBSRV_PORT=8443 docker compose up --build -d
 
 # Stop the server
-docker-compose down
+docker compose down
 ```
 
 ### Manual Docker Commands
@@ -202,7 +202,7 @@ volumes:
 
 ```bash
 # Regenerate certificates if needed
-mkcert -cert-file localhost.pem -key-file localhost-key.pem websrv 10.1.1.30 localhost
+mkcert -cert-file localhost.pem -key-file localhost-key.pem websrv 10.1.1.30 localhost websrv.net websrv.lan
 
 # Reinstall mkcert CA
 mkcert -uninstall
@@ -226,16 +226,16 @@ curl https://10.1.1.30/
 
 ```bash
 # View container logs
-docker-compose logs
+docker compose logs
 
 # Follow logs in real-time
-docker-compose logs -f
+docker compose logs -f
 
 # Access container shell
-docker-compose exec nginx sh
+docker compose exec nginx sh
 
 # Check running containers and health status
-docker-compose ps
+docker compose ps
 
 # Check network interfaces
 ifconfig lo0 | grep "inet 10.1.1"

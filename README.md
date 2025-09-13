@@ -35,7 +35,7 @@ sudo ifconfig lo0 alias 10.1.1.30
 Create a shared Docker network (run once):
 
 ```bash
-docker network create --driver bridge --subnet=10.1.1.0/24 local_network
+docker network create --driver bridge --subnet=10.1.1.0/24 my_network
 ```
 
 ## Initial Setup (Run Once)
@@ -110,13 +110,13 @@ echo "WEBSRV_PORT=443" >> .env
 
 ```bash
 # Build and start the server
-docker compose up --build -d
+docker compose up -d
 
 # With custom IP
-WEBSRV_IP=10.1.1.31 docker compose up --build -d
+WEBSRV_IP=10.1.1.31 docker compose up  -d
 
 # With custom IP and port
-WEBSRV_IP=10.1.1.31 WEBSRV_PORT=8443 docker compose up --build -d
+WEBSRV_IP=10.1.1.31 WEBSRV_PORT=8443 docker compose up  -d
 
 # Stop the server
 docker compose down

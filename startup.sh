@@ -28,6 +28,7 @@ fi
 # Step 2: Start Docker container
 echo -e "\n2. Starting Docker container"
 echo "-------------------------"
+docker compose build --no-cache
 docker compose up -d
 sleep 2
 

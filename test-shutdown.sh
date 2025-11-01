@@ -38,7 +38,7 @@ echo -e "\n3. IP Configuration"
 echo "------------------"
 if ip addr show | grep -q "10.1.1.30"; then
     echo -e "${RED}✗ IP alias 10.1.1.30 is still configured${NC}"
-    echo "Fix: Run 'sudo ip addr del 10.1.1.30/24 dev lo'"
+    echo "Fix: Run 'sudo ip addr del 10.1.1.30/32 dev lo'"
     ((ISSUES++))
 else
     echo -e "${GREEN}✓ IP alias is removed${NC}"

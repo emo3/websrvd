@@ -4,7 +4,7 @@ This guide helps you set up a local HTTPS server using Docker with Nginx and sel
 
 ## Quick Start
 
-1. Add IP alias: `sudo ip addr add 10.1.1.30/24 dev lo`
+1. Add IP alias: `sudo ip addr add 10.1.1.30/32 dev lo`
 2. Create network: `docker network create --driver bridge --subnet=10.1.1.0/24 my_network`
 3. Start server: `docker compose up -d`
 4. Verify setup: `./test-setup.sh`
@@ -41,7 +41,7 @@ Create an IP alias and add hostname to /etc/hosts for your local server:
 # For macOS:
 sudo ifconfig lo0 alias 10.1.1.30
 # For Linux:
-sudo ip addr add 10.1.1.30/24 dev lo
+sudo ip addr add 10.1.1.30/32 dev lo
 
 # Add hostname to /etc/hosts
 echo "10.1.1.30 websrv" | sudo tee -a /etc/hosts
@@ -55,7 +55,7 @@ Follow these steps in order:
 
 ```bash
 # Add IP alias for the server
-sudo ip addr add 10.1.1.30/24 dev lo
+sudo ip addr add 10.1.1.30/32 dev lo
 
 # Add hostname to /etc/hosts
 echo "10.1.1.30 websrv" | sudo tee -a /etc/hosts
@@ -181,12 +181,12 @@ docker compose down
 docker build -t websrvd .
 
 # Run the container
-docker run -d -p 10.1.1.30:443:443 --name websrvd \
+docker run -d --network host --name websrv \
   -v ${HOME}/repos:/usr/share/nginx/html websrvd
 
 # Stop and cleanup
-docker stop websrvd
-docker rm websrvd
+docker stop websrv
+docker rm websrv
 docker rmi websrvd  # Optional: remove image
 ```
 
@@ -219,6 +219,59 @@ Open your web browser and navigate to:
 - `https://10.1.1.30/` (using IP address)
 
 You should **NOT** see SSL certificate warnings thanks to mkcert.
+
+## Testing
+
+### Load Testing
+
+To perform basic load testing, use Apache Bench (ab) or curl:
+
+```bash
+# Install ab (if not available)
+sudo apt-get install apache2-utils  # Ubuntu/Debian
+# or
+brew install apache2  # macOS
+
+# Run load test
+ab -n 1000 -c 10 https://websrv/
+
+# Alternative with curl for simple load
+for i in {1..100}; do curl -k https://websrv/ & done; wait
+```
+
+Monitor nginx logs and container resources during testing.
+
+### Edge Case Testing
+
+Run the test scripts to verify edge cases:
+
+```bash
+./test-setup.sh  # Comprehensive setup verification
+./test-shutdown.sh  # Shutdown verification
+```
+
+For additional edge cases, test with invalid certificates, network failures, or large file uploads.
+
+### Integration Tests for Backup/Restore
+
+To test backup and restore functionality:
+
+```bash
+# Create a backup
+./backup.sh
+
+# List backups
+./restore.sh
+
+# Restore from latest backup (replace with actual filename)
+./restore.sh backup-2023-10-01.tar.gz
+
+# Verify by restarting services and running tests
+./startup.sh
+./test-setup.sh
+```
+
+This ensures configuration integrity after restore.
 
 ## Volume Mount Paths
 
@@ -301,14 +354,14 @@ If you encounter permission errors:
 ls -laZ /path/to/mounted/directory
 
 # Fix SELinux context if needed
-sudo chcon -Rt httpd_sys_content_t /path/to/mounted/directory
+sudo chcon -Rt httpd_sys_content_t ${HOME}/repos
 ```
 
 ### Performance Issues
 
 ```bash
 # Check nginx worker processes
-docker exec websrv ps aux | grep nginx
+docker compose exec nginx ps aux | grep nginx
 
 # Monitor resource usage
 docker stats websrv
@@ -321,7 +374,7 @@ docker logs websrv
 
 ```bash
 # Check for port conflicts
-sudo netstat -tulpn | grep :443
+sudo ss -tulpn | grep :443 || sudo netstat -tulpn | grep :443
 
 # Check Docker logs
 docker compose logs

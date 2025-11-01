@@ -25,8 +25,8 @@ else
     echo -e "${GREEN}✓ websrv already in /etc/hosts${NC}"
 fi
 
-# Step 2: Start Docker container
-echo -e "\n2. Starting Docker container"
+# Step 3: Start Docker container
+echo -e "\n3. Starting Docker container"
 echo "-------------------------"
 docker compose build --no-cache
 docker compose up -d

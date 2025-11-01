@@ -35,7 +35,7 @@ echo -e "\n2. IP Configuration"
 echo "------------------"
 if ! ip addr show | grep -q "10.1.1.30"; then
     echo -e "${RED}✗ IP 10.1.1.30 is not configured${NC}"
-    echo "Fix: Run 'sudo ip addr add 10.1.1.30/24 dev lo'"
+    echo "Fix: Run 'sudo ip addr add 10.1.1.30/32 dev lo'"
     echo -e "\n${RED}✗ Skipping remaining tests - configure IP first${NC}"
     exit 1
 fi

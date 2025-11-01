@@ -1,10 +1,17 @@
 # Running a Local HTTPS Server with Docker
 
-This guide will help you set up a local HTTPS server using Docker with Nginx and self-signed SSL certificates. The main reason for using Docker is the space taken up by servers and how long it takes to build/rebuild the servers.
+This guide helps you set up a local HTTPS server using Docker with Nginx and self-signed SSL certificates. The server uses host networking mode for reliable connectivity and works with SELinux enabled.
+
+## Quick Start
+
+1. Add IP alias: `sudo ip addr add 10.1.1.30/24 dev lo`
+2. Create network: `docker network create --driver bridge --subnet=10.1.1.0/24 my_network`
+3. Start server: `docker compose up -d`
+4. Verify setup: `./test-setup.sh`
 
 ## Prerequisites
 
-### 1. Install mkcert
+### 1. Install Required Tools
 
 To generate trusted local SSL certificates, install [mkcert](https://github.com/FiloSottile/mkcert):
 
@@ -17,6 +24,10 @@ brew install nss # if you use Firefox
 brew install mkcert
 # or follow instructions at https://github.com/FiloSottile/mkcert
 
+# Setup Docker permissions (Linux only)
+sudo usermod -aG docker $USER
+# Log out and log back in for the changes to take effect
+
 # Windows
 choco install mkcert
 ```
@@ -27,16 +38,44 @@ Create an IP alias for your local server:
 
 ```bash
 # Add IP alias (run once per boot, or add to startup script)
+# For macOS:
 sudo ifconfig lo0 alias 10.1.1.30
+# For Linux:
+sudo ip addr add 10.1.1.30/24 dev lo
 ```
 
-### 3. Create Docker Network
+### 3. Server Setup
 
-Create a shared Docker network (run once):
+Follow these steps in order:
 
+1. **Add IP Alias**
 ```bash
-docker network create --driver bridge --subnet=10.1.1.0/24 my_network
+# Add IP alias for the server
+sudo ip addr add 10.1.1.30/24 dev lo
 ```
+
+2. **Create Docker Network**
+```bash
+# Create network with specific options
+docker network create --driver bridge --subnet=10.1.1.0/24 \
+  --opt "com.docker.network.bridge.enable_icc"="true" \
+  --opt "com.docker.network.bridge.enable_ip_masquerade"="true" \
+  my_network
+```
+
+3. **Start the Server**
+```bash
+# Start the container
+docker compose up -d
+```
+
+4. **Verify Setup**
+```bash
+# Run the test script to verify all components
+./test-setup.sh
+```
+
+Note: The setup works with SELinux in enforcing mode, no need to disable it.
 
 ## Initial Setup (Run Once)
 
@@ -95,14 +134,17 @@ export WEBSRV_IP=10.1.1.50
 docker compose up -d
 ```
 
-### Using .env File
+### Environment Configuration (Optional)
 
-Create a `.env` file for persistent configuration:
+For custom settings, create a `.env` file:
 
 ```bash
+# Default values shown - modify as needed
 echo "WEBSRV_IP=10.1.1.30" > .env
 echo "WEBSRV_PORT=443" >> .env
 ```
+
+Note: The test script assumes default values. If you change these, update the test script accordingly.
 
 ## Running the Server
 
@@ -140,24 +182,24 @@ docker rmi websrvd  # Optional: remove image
 
 ## Using with Terraform
 
-1. **Initialize and apply Terraform:**
+# Using Terraform (Optional)
 
-    ```bash
-    # Reconfigure backend, ignoring any saved configuration
-    terraform init -reconfigure
-    
-    # Validate terraform files
-    terraform validate
-    
-    # Format files (optional)
-    terraform fmt -diff -recursive
-    
-    # Apply configuration
-    terraform apply -auto-approve
-    
-    # To remove resources
-    terraform destroy -auto-approve
-    ```
+If you prefer using Terraform for infrastructure management:
+
+```bash
+# Initialize Terraform
+terraform init -reconfigure
+
+# Validate and format
+terraform validate
+terraform fmt -diff -recursive
+
+# Apply configuration
+terraform apply -auto-approve
+
+# To remove resources
+terraform destroy -auto-approve
+```
 
 ## Verification
 
@@ -198,13 +240,28 @@ volumes:
 
 ## Troubleshooting
 
+### Automated Testing
+
+The `test-setup.sh` script verifies:
+- SELinux status and compatibility
+- IP configuration
+- Docker container status
+- HTTPS server response
+- Directory listing functionality
+
+Run it anytime to check your setup:
+```bash
+./test-setup.sh
+```
+
 ### SSL Certificate Issues
 
+If you need to regenerate certificates:
 ```bash
-# Regenerate certificates if needed
-mkcert -cert-file localhost.pem -key-file localhost-key.pem websrv 10.1.1.30 localhost websrv.net websrv.lan
+# Regenerate certificates
+mkcert -cert-file localhost.pem -key-file localhost-key.pem websrv 10.1.1.30 localhost
 
-# Reinstall mkcert CA
+# If needed, reinstall mkcert CA
 mkcert -uninstall
 mkcert -install
 ```
@@ -212,14 +269,13 @@ mkcert -install
 ### Network Connectivity Issues
 
 ```bash
-# Test IP alias
+# Run the comprehensive test script
+./test-setup.sh
+
+# Manual checks if needed:
 ping -c 1 10.1.1.30
-
-# Check Docker network
-docker network inspect local_network
-
-# Test container connectivity
-curl https://10.1.1.30/
+docker network inspect my_network
+curl -k https://10.1.1.30/
 ```
 
 ### Useful Commands
@@ -238,7 +294,10 @@ docker compose exec nginx sh
 docker compose ps
 
 # Check network interfaces
+# For macOS:
 ifconfig lo0 | grep "inet 10.1.1"
+# For Linux:
+ip addr show dev lo | grep "10.1.1"
 
 # Run network test script
 ./test-setup.sh
@@ -259,7 +318,9 @@ websrvd/
 
 ## Security Notes
 
+- This setup works with SELinux in enforcing mode
 - SSL certificates are only trusted on the machine where mkcert was installed
-- This setup is for **local development only** - do not use in production
+- Setup is for **local development only** - do not use in production
 - The `server_tokens off` directive in nginx.conf hides version information
 - Rate limiting is configured to prevent abuse
+- Host networking is used for simplicity, but provides less container isolation

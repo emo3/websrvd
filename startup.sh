@@ -15,6 +15,16 @@ echo "--------------------"
 sudo ip addr add 10.1.1.30/24 dev lo
 sleep 1
 
+# Step 2: Add hostname to /etc/hosts
+echo -e "\n2. Adding hostname to /etc/hosts"
+echo "-------------------------------"
+if ! grep -q "10.1.1.30 websrv" /etc/hosts; then
+    echo "10.1.1.30 websrv" | sudo tee -a /etc/hosts > /dev/null
+    echo -e "${GREEN}✓ Added websrv to /etc/hosts${NC}"
+else
+    echo -e "${GREEN}✓ websrv already in /etc/hosts${NC}"
+fi
+
 # Step 2: Start Docker container
 echo -e "\n2. Starting Docker container"
 echo "-------------------------"

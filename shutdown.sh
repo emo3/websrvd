@@ -15,8 +15,18 @@ echo "------------------------"
 docker compose down
 sleep 2
 
-# Step 2: Remove IP alias
-echo -e "\n2. Removing IP alias"
+# Step 2: Remove hostname from /etc/hosts
+echo -e "\n2. Removing hostname from /etc/hosts"
+echo "-----------------------------------"
+if grep -q "10.1.1.30 websrv" /etc/hosts; then
+    sudo sed -i '/10.1.1.30 websrv/d' /etc/hosts
+    echo -e "${GREEN}✓ Removed websrv from /etc/hosts${NC}"
+else
+    echo -e "${GREEN}✓ websrv not in /etc/hosts${NC}"
+fi
+
+# Step 3: Remove IP alias
+echo -e "\n3. Removing IP alias"
 echo "------------------"
 sudo ip addr del 10.1.1.30/24 dev lo
 sleep 1

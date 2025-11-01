@@ -9,8 +9,47 @@ NC='\033[0m' # No Color
 echo -e "${YELLOW}Running HTTPS Server Tests${NC}"
 echo "================================="
 
-# Step 1: Check SELinux status
-echo -e "\n1. SELinux Status"
+# Step 1: Check Docker container (critical)
+echo -e "\n1. Docker Container"
+echo "-----------------"
+if ! docker ps | grep -q websrv; then
+    echo -e "${RED}✗ Container is not running${NC}"
+    echo "Fix: Run 'docker compose up -d'"
+    echo -e "\n${RED}✗ Skipping remaining tests - start container first${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✓ Container is running${NC}"
+
+# Check container networking mode
+if docker inspect websrv | grep -q '"NetworkMode": "host"'; then
+    echo -e "${GREEN}✓ Container is using host networking${NC}"
+else
+    echo -e "${RED}✗ Container is not using host networking${NC}"
+    echo "Fix: Update docker-compose.yml to use network_mode: 'host'"
+    echo -e "\n${RED}✗ Skipping remaining tests - fix networking first${NC}"
+    exit 1
+fi
+
+# Step 2: Check IP configuration (critical)
+echo -e "\n2. IP Configuration"
+echo "------------------"
+if ! ip addr show | grep -q "10.1.1.30"; then
+    echo -e "${RED}✗ IP 10.1.1.30 is not configured${NC}"
+    echo "Fix: Run 'sudo ip addr add 10.1.1.30/24 dev lo'"
+    echo -e "\n${RED}✗ Skipping remaining tests - configure IP first${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✓ IP 10.1.1.30 is configured${NC}"
+
+# Test IP reachability
+if ping -c 1 -W 2 10.1.1.30 > /dev/null 2>&1; then
+    echo -e "${GREEN}✓ IP 10.1.1.30 is reachable${NC}"
+else
+    echo -e "${YELLOW}! IP 10.1.1.30 is not reachable (expected with host networking)${NC}"
+fi
+
+# Step 3: Check SELinux status
+echo -e "\n3. SELinux Status"
 echo "----------------"
 if command -v getenforce &> /dev/null; then
     SELINUX_STATUS=$(getenforce)
@@ -30,40 +69,6 @@ if command -v getenforce &> /dev/null; then
     fi
 else
     echo -e "${GREEN}✓ SELinux not found (not an issue)${NC}"
-fi
-
-# Step 2: Check IP configuration
-echo -e "\n2. IP Configuration"
-echo "------------------"
-if ip addr show | grep -q "10.1.1.30"; then
-    echo -e "${GREEN}✓ IP 10.1.1.30 is configured${NC}"
-    # Test IP reachability
-    if ping -c 1 -W 2 10.1.1.30 > /dev/null 2>&1; then
-        echo -e "${GREEN}✓ IP 10.1.1.30 is reachable${NC}"
-    else
-        echo -e "${YELLOW}! IP 10.1.1.30 is not reachable (expected with host networking)${NC}"
-    fi
-else
-    echo -e "${RED}✗ IP 10.1.1.30 is not configured${NC}"
-    echo "Fix: Run 'sudo ip addr add 10.1.1.30/24 dev lo'"
-fi
-
-# Step 3: Check Docker container
-echo -e "\n3. Docker Container"
-echo "-----------------"
-if docker ps | grep -q websrv; then
-    echo -e "${GREEN}✓ Container is running${NC}"
-    
-    # Check container networking mode
-    if docker inspect websrv | grep -q '"NetworkMode": "host"'; then
-        echo -e "${GREEN}✓ Container is using host networking${NC}"
-    else
-        echo -e "${RED}✗ Container is not using host networking${NC}"
-        echo "Fix: Update docker-compose.yml to use network_mode: 'host'"
-    fi
-else
-    echo -e "${RED}✗ Container is not running${NC}"
-    echo "Fix: Run 'docker compose up -d'"
 fi
 
 # Step 4: Test HTTPS server
@@ -90,10 +95,29 @@ fi
 # Final Status
 echo -e "\nFinal Status"
 echo "------------"
-if docker ps | grep -q websrv && \
-   curl -k --connect-timeout 5 -s https://10.1.1.30/ > /dev/null; then
-    echo -e "${GREEN}✓ All critical checks passed${NC}"
+ALL_PASSED=true
+
+# Critical checks
+if ! docker ps | grep -q websrv; then
+    ALL_PASSED=false
+fi
+if ! docker inspect websrv | grep -q '"NetworkMode": "host"'; then
+    ALL_PASSED=false
+fi
+if ! ip addr show | grep -q "10.1.1.30"; then
+    ALL_PASSED=false
+fi
+if ! curl -k --connect-timeout 5 -s https://10.1.1.30/ > /dev/null; then
+    ALL_PASSED=false
+fi
+
+if [ "$ALL_PASSED" = "true" ]; then
+    echo -e "${GREEN}✓ All critical checks passed:${NC}"
+    echo "  • Docker container running"
+    echo "  • Host networking configured"
+    echo "  • IP alias configured"
+    echo "  • HTTPS server responding"
 else
-    echo -e "${RED}✗ Some checks failed - review above messages${NC}"
+    echo -e "${RED}✗ Some checks failed - review messages above${NC}"
     exit 1
 fi

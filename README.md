@@ -48,13 +48,15 @@ sudo ip addr add 10.1.1.30/24 dev lo
 
 Follow these steps in order:
 
-1. **Add IP Alias**
+#### 1. **Add IP Alias**
+
 ```bash
 # Add IP alias for the server
 sudo ip addr add 10.1.1.30/24 dev lo
 ```
 
-2. **Create Docker Network**
+#### 2. **Create Docker Network**
+
 ```bash
 # Create network with specific options
 docker network create --driver bridge --subnet=10.1.1.0/24 \
@@ -63,13 +65,15 @@ docker network create --driver bridge --subnet=10.1.1.0/24 \
   my_network
 ```
 
-3. **Start the Server**
+#### 3. **Start the Server**
+
 ```bash
 # Start the container
 docker compose up -d
 ```
 
-4. **Verify Setup**
+#### 4. **Verify Setup**
+
 ```bash
 # Run the test script to verify all components
 ./test-setup.sh
@@ -182,7 +186,7 @@ docker rmi websrvd  # Optional: remove image
 
 ## Using with Terraform
 
-# Using Terraform (Optional)
+### Using Terraform (Optional)
 
 If you prefer using Terraform for infrastructure management:
 
@@ -243,6 +247,7 @@ volumes:
 ### Automated Testing
 
 The `test-setup.sh` script verifies:
+
 - SELinux status and compatibility
 - IP configuration
 - Docker container status
@@ -250,6 +255,7 @@ The `test-setup.sh` script verifies:
 - Directory listing functionality
 
 Run it anytime to check your setup:
+
 ```bash
 ./test-setup.sh
 ```
@@ -257,6 +263,7 @@ Run it anytime to check your setup:
 ### SSL Certificate Issues
 
 If you need to regenerate certificates:
+
 ```bash
 # Regenerate certificates
 mkcert -cert-file localhost.pem -key-file localhost-key.pem websrv 10.1.1.30 localhost

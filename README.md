@@ -432,6 +432,12 @@ Verification script for shutdown that checks:
 - HTTPS server is no longer responding
 - Optional: Docker network cleanup
 
+### docker-prune.sh
+
+Performs a comprehensive cleanup of the Docker system to free up disk space. It removes all unused containers, images, volumes, networks, and build cache. This is useful for system-wide maintenance.
+
+**Warning:** This script affects your entire Docker installation, not just this project.
+
 ### backup.sh
 
 Creates a compressed backup of all configuration files, certificates, and environment settings:

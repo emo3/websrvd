@@ -15,8 +15,18 @@ echo "------------------------"
 docker compose down
 sleep 2
 
-# Step 2: Remove hostname from /etc/hosts
-echo -e "\n2. Removing hostname from /etc/hosts"
+# Step 2: Remove Docker network
+echo -e "\n2. Removing Docker network"
+echo "--------------------------"
+if docker network ls | grep -q "my_network"; then
+    docker network rm my_network
+    echo -e "${GREEN}✓ Removed 'my_network' Docker network${NC}"
+else
+    echo -e "${GREEN}✓ 'my_network' Docker network not found${NC}"
+fi
+
+# Step 3: Remove hostname from /etc/hosts
+echo -e "\n3. Removing hostname from /etc/hosts"
 echo "-----------------------------------"
 if grep -q "10.1.1.30 websrv" /etc/hosts; then
     sudo sed -i '/10.1.1.30 websrv/d' /etc/hosts
@@ -25,8 +35,8 @@ else
     echo -e "${GREEN}✓ websrv not in /etc/hosts${NC}"
 fi
 
-# Step 3: Remove IP alias
-echo -e "\n3. Removing IP alias"
+# Step 4: Remove IP alias
+echo -e "\n4. Removing IP alias"
 echo "------------------"
 sudo ip addr del 10.1.1.30/24 dev lo
 sleep 1

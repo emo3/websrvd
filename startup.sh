@@ -12,7 +12,7 @@ echo "===================="
 # Step 1: Configure IP alias
 echo -e "\n1. Configuring IP alias"
 echo "--------------------"
-sudo ip addr add 10.1.1.30/24 dev lo
+sudo ip addr add 10.1.1.30/32 dev lo
 sleep 1
 
 # Step 2: Add hostname to /etc/hosts

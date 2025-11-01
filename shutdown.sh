@@ -38,7 +38,7 @@ fi
 # Step 4: Remove IP alias
 echo -e "\n4. Removing IP alias"
 echo "------------------"
-sudo ip addr del 10.1.1.30/24 dev lo
+sudo ip addr del 10.1.1.30/32 dev lo
 sleep 1
 
 # Verify shutdown was successful

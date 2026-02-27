@@ -1,6 +1,6 @@
 # Running a Local HTTPS Server with Docker
 
-This guide will help you set up a local HTTPS server using Docker with Nginx and self-signed SSL certificates. The main reason for using Docker is the space taken up by servers and how long it takes to build/rebuild the servers.
+This guide will help you set up a local HTTPS server using Docker with Chainguard Nginx and mkcert self-signed SSL certificates. The main reason for using Docker is the space taken up by servers and how long it takes to build/rebuild the servers.
 
 ## Prerequisites
 
@@ -16,9 +16,6 @@ brew install nss # if you use Firefox
 # Linux (using Homebrew or package manager)
 brew install mkcert
 # or follow instructions at https://github.com/FiloSottile/mkcert
-
-# Windows
-choco install mkcert
 ```
 
 ### 2. Set up IP Alias (macOS/Linux)
@@ -57,20 +54,12 @@ mkcert -install
 mkcert -cert-file localhost.pem -key-file localhost-key.pem websrv websrvd-nginx-1 10.1.1.30 localhost
 ```
 
-### 3. Create Required Files
-
-Create these files in your project directory:
-
-- `Dockerfile`
-- `docker-compose.yml`
-- `nginx.conf`
-
 **Important:** You must generate the SSL certificates before building the Docker image.
 
 ### 4. Download Base Image (Optional)
 
 ```bash
-docker pull nginx:alpine
+docker pull cgr.dev/chainguard/nginx:latest
 ```
 
 ## Configuration Options
@@ -331,4 +320,4 @@ websrvd/
   sudo pfctl -f /etc/pf.conf
   sudo pfctl -a websrvd -F all
   ```
-
+  

@@ -320,4 +320,12 @@ websrvd/
   sudo pfctl -f /etc/pf.conf
   sudo pfctl -a websrvd -F all
   ```
-  
+
+- Total Clean Up of Docker Resources (if needed):
+
+  ```bash
+  # Remove containers, images, volumes, and build cache
+  docker system prune -a --volumes -f
+  # Remove build cache history
+  docker buildx history rm --all
+  ```

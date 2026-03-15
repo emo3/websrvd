@@ -89,8 +89,8 @@ docker compose up -d
 Create a `.env` file for persistent configuration:
 
 ```bash
-echo "WEBSRV_HOST=10.1.1.30" > .env
-echo "WEBSRV_PORT=443" >> .env
+echo \"WEBSRV_HOST=10.1.1.30\" > .env
+echo \"WEBSRV_PORT=443\" >> .env
 ```
 
 ## Running the Server
@@ -234,7 +234,7 @@ docker compose exec nginx sh
 docker compose ps
 
 # Check network interfaces
-ifconfig lo0 | grep "inet 10.1.1"
+ifconfig lo0 | grep \"inet 10.1.1\"
 
 # Run network test script
 ./test-setup.sh
@@ -269,13 +269,15 @@ websrvd/
 - Base image: this project now uses the Chainguard stable nginx image (`cgr.dev/chainguard/nginx:latest`) built so the nginx process can run as a non-root user.
 
 - Certificates and permissions **(fix for connection refused):**
-  ```
+
+  ```bash
   docker stop websrv && docker rm websrv || true
   chmod 0644 websrv.pem
   chmod 0640 websrv-key.pem
   docker compose build --no-cache
   WEBSRV_HOST=127.0.0.1 WEBSRV_PORT=8443 docker compose up -d
   ```
+
   Rebuild required for non-root nginx to read key/certs. Direct localhost:8443 binding + PF for macOS.
 
 - Binding to 10.1.1.30 on macOS: Docker Desktop on macOS may not allow directly binding containers to a host alias. The recommended approach used here is to run the container bound to `127.0.0.1:8443` and use a kernel redirect (PF) to forward `10.1.1.30:443` → `127.0.0.1:8443`.
@@ -301,7 +303,7 @@ websrvd/
 
   # backup and include anchor
   sudo cp /etc/pf.conf /etc/pf.conf.websrvd.bak
-  printf "\nanchor \"websrvd\"\nload anchor \"websrvd\" from \"/etc/pf.anchors/websrvd\"\n" | sudo tee -a /etc/pf.conf
+  printf \"\\nanchor \\\"websrvd\\\"\\nload anchor \\\"websrvd\\\" from \\\"/etc/pf.anchors/websrvd\\\"\\n\" | sudo tee -a /etc/pf.conf
 
   # reload
   sudo pfctl -f /etc/pf.conf
@@ -319,7 +321,7 @@ websrvd/
 
   ```bash
   # remove anchor and reload
-  sudo sed -i.bak '/anchor "websrvd"/,+2d' /etc/pf.conf
+  sudo sed -i.bak '/anchor \"websrvd\"/ ,+2d' /etc/pf.conf
   sudo pfctl -f /etc/pf.conf
   sudo pfctl -a websrvd -F all
   ```
@@ -332,3 +334,23 @@ websrvd/
   # Remove build cache history
   docker buildx history rm --all
   ```
+
+## Post-Docker Reset Quick Fix
+
+After Docker reset (containers/networks gone), run this sequence in `websrvd/`:
+
+```bash
+docker compose down
+docker stop websrv || true; docker rm websrv || true
+brew install mkcert nss || true
+mkcert -install
+ls -la *.pem || mkcert -cert-file websrv.pem -key-file websrv-key.pem 10.1.1.30 localhost websrv
+chmod 644 websrv.pem; chmod 640 websrv-key.pem
+sudo ifconfig lo0 alias 10.1.1.30/32
+docker network create --driver bridge --subnet=10.1.1.0/24 local_network || true
+WEBSRV_HOST=127.0.0.1 WEBSRV_PORT=8443 docker compose up -d --build
+echo 'rdr pass on lo0 inet proto tcp from any to 10.1.1.30 port 443 -> 127.0.0.1 port 8443' | sudo pfctl -Ef -
+sudo pfctl -E
+```
+
+Test: `open https://10.1.1.30/alma9`

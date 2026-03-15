@@ -212,9 +212,10 @@ docker network inspect local_network
 curl https://10.1.1.30/
 # Otherwise (skip cert validation):
 curl -k https://10.1.1.30/
-# If you are running the container bound to localhost:8443 (and using PF to forward
-# 10.1.1.30:443 -> 127.0.0.1:8443), you can also test directly:
-curl -k https://127.0.0.1:8443/
+# Test (localhost:8443 timeouts normal on Docker Desktop):
+curl -k https://10.1.1.30/media/
+docker compose logs nginx
+# Health unhealthy OK - minimal image lacks curl for healthcheck.
 ```
 
 ### Useful Commands
@@ -267,13 +268,15 @@ websrvd/
 
 - Base image: this project now uses the Chainguard stable nginx image (`cgr.dev/chainguard/nginx:latest`) built so the nginx process can run as a non-root user.
 
-- Certificates and permissions (important): set secure modes on the host before building so the image preserves them via `COPY --chown`:
-
-  ```bash
+- Certificates and permissions **(fix for connection refused):**
+  ```
+  docker stop websrv && docker rm websrv || true
   chmod 0644 websrv.pem
   chmod 0640 websrv-key.pem
   docker compose build --no-cache
+  WEBSRV_HOST=127.0.0.1 WEBSRV_PORT=8443 docker compose up -d
   ```
+  Rebuild required for non-root nginx to read key/certs. Direct localhost:8443 binding + PF for macOS.
 
 - Binding to 10.1.1.30 on macOS: Docker Desktop on macOS may not allow directly binding containers to a host alias. The recommended approach used here is to run the container bound to `127.0.0.1:8443` and use a kernel redirect (PF) to forward `10.1.1.30:443` → `127.0.0.1:8443`.
 

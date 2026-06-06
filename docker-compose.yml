@@ -9,7 +9,9 @@ services:
     volumes:
       - ${HOME}/repos:/usr/share/nginx/html
     healthcheck:
-      test: ["CMD-SHELL", "curl -f -k https://127.0.0.1:443/ || exit 1"]
+      # Chainguard nginx images are minimal and may not include curl or wget.
+      # Use a lightweight nginx config sanity check (works without extra tools).
+      test: ["CMD-SHELL", "nginx -t"]
       interval: 30s
       timeout: 10s
       retries: 3

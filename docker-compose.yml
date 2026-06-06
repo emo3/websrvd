@@ -7,11 +7,10 @@ services:
     ports:
       - "${WEBSRV_HOST:-10.1.1.30}:${WEBSRV_PORT:-443}:443"
     volumes:
-      - ${HOME}/repos:/usr/share/nginx/html
+      - "${REPOS_PATH:-/mnt/spare/repos}:/usr/share/nginx/html"
     healthcheck:
-      # Chainguard nginx images are minimal and may not include curl or wget.
-      # Use a lightweight nginx config sanity check (works without extra tools).
-      test: ["CMD-SHELL", "nginx -t"]
+      # Use "CMD" instead of "CMD-SHELL" to execute the binary directly without a shell
+      test: ["CMD", "nginx", "-t"]
       interval: 30s
       timeout: 10s
       retries: 3

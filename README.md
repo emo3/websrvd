@@ -4,7 +4,7 @@ This guide will help you set up a local HTTPS server using Docker with Chainguar
 
 ## Prerequisites
 
-### 1. Install mkcert
+### Install mkcert
 
 To generate trusted local SSL certificates, install [mkcert](https://github.com/FiloSottile/mkcert):
 
@@ -18,7 +18,7 @@ brew install mkcert
 # or follow instructions at https://github.com/FiloSottile/mkcert
 ```
 
-### 2. Set up IP Alias (macOS/Linux)
+### Set up IP Alias (macOS/Linux)
 
 Create an IP alias for your local server:
 
@@ -27,7 +27,7 @@ Create an IP alias for your local server:
 sudo ifconfig lo0 alias 10.1.1.30
 ```
 
-### 3. Create Docker Network
+### Create Docker Network
 
 Create a shared Docker network (run once):
 
@@ -37,14 +37,14 @@ docker network create --driver bridge --subnet=10.1.1.0/24 my_network
 
 ## Initial Setup (Run Once)
 
-### 1. Create Project Directory
+### Create Project Directory
 
 ```bash
 mkdir websrvd
 cd websrvd
 ```
 
-### 2. Generate SSL Certificates
+### Generate SSL Certificates
 
 ```bash
 # Install mkcert root CA
@@ -56,7 +56,7 @@ mkcert -cert-file localhost.pem -key-file localhost-key.pem websrv websrvd-nginx
 
 **Important:** You must generate the SSL certificates before building the Docker image.
 
-### 4. Download Base Image (Optional)
+### Download Base Image (Optional)
 
 ```bash
 docker pull cgr.dev/chainguard/nginx:latest
@@ -129,7 +129,7 @@ docker rmi websrvd  # Optional: remove image
 
 ## Using with Terraform
 
-1. **Initialize and apply Terraform:**
+- Initialize and apply Terraform:
 
     ```bash
     # Reconfigure backend, ignoring any saved configuration
@@ -264,7 +264,7 @@ websrvd/
 - The `server_tokens off` directive in nginx.conf hides version information
 - Rate limiting is configured to prevent abuse
 
-## macOS / Chainguard Notes
+## macOS / Chainguard Notes P1
 
 - Base image: this project now uses the Chainguard stable nginx image (`cgr.dev/chainguard/nginx:latest`) built so the nginx process can run as a non-root user.
 
@@ -341,29 +341,30 @@ This section is specifically for AlmaLinux 9 (or other Linux hosts). Keep in min
 
 - The macOS-only pieces in this README (`lo0`, `ifconfig ...`, `pfctl rdr ...`) are **not** applicable on AlmaLinux.
 - If you want to use `10.1.1.30` as a “local development IP”, you can either:
-  1) bind Docker to your *real* host IP (recommended), or
-  2) add `10.1.1.30/32` as a loopback alias on the host, and bind Docker to that IP.
+  - bind Docker to your *real* host IP (recommended), or
+  - add `10.1.1.30/32` as a loopback alias on the host, and bind Docker to that IP.
 - Whatever IP/hostname you type in your browser must be present in the mkcert SANs.
 
 ### Option A (recommended): bind to the real host IP (no loopback alias)
 
-1) Generate certs that include your **real host IP** (example shown as `ALMA9_IP`) and any hostname you use.
+- Generate certs that include your **real host IP** (example shown as `ALMA9_IP`) and any hostname you use.
 
 ```bash
+ALMA9_IP="10.1.1.30"
 mkcert -install
 mkcert -cert-file websrv.pem -key-file websrv-key.pem \
   websrv \
-  ALMA9_IP \
+  ${ALMA9_IP} \
   localhost
 ```
 
-2) Run compose binding to your actual host IP:
+- Run compose binding to your actual host IP:
 
 ```bash
 WEBSRV_HOST=ALMA9_IP WEBSRV_PORT=443 docker compose up -d --build
 ```
 
-3) Verify from the Alma9 host.
+- Verify from the Alma9 host.
 
 If you have curl:
 
@@ -381,19 +382,19 @@ ss -ltnp | grep -E ':443\b' || true
 
 This is useful if you want the same `10.1.1.30` URL style as in the macOS instructions.
 
-1) Add alias (run once):
+- Add alias (run once):
 
 ```bash
 sudo ip addr add 10.1.1.30/32 dev lo || true
 ```
 
-2) Remove alias (cleanup):
+- Remove alias (cleanup):
 
 ```bash
 sudo ip addr del 10.1.1.30/32 dev lo || true
 ```
 
-3) Generate certs including the loopback IP:
+- Generate certs including the loopback IP:
 
 ```bash
 mkcert -install
@@ -403,7 +404,7 @@ mkcert -cert-file websrv.pem -key-file websrv-key.pem \
   localhost
 ```
 
-4) Bind Docker to `10.1.1.30`:
+- Bind Docker to `10.1.1.30`:
 
 ```bash
 WEBSRV_HOST=10.1.1.30 WEBSRV_PORT=443 docker compose up -d --build
@@ -440,7 +441,7 @@ This happens when Compose tries to publish `WEBSRV_HOST=10.1.1.30`, but `10.1.1.
 
 Fix options:
 
-**Option A (recommended): bind to a real local IP or to all interfaces**
+#### Option A (recommended): bind to a real local IP or to all interfaces
 
 ```bash
 # publish on all host interfaces
@@ -457,7 +458,7 @@ ss -ltnp | grep -E ':443\b' || true
 docker compose ps
 ```
 
-**Option B: add `10.1.1.30/32` to loopback on the host (so Docker can bind it)**
+#### Option B: add `10.1.1.30/32` to loopback on the host (so Docker can bind it)
 
 ```bash
 sudo ip addr add 10.1.1.30/32 dev lo || true
@@ -471,8 +472,7 @@ To remove later:
 sudo ip addr del 10.1.1.30/32 dev lo || true
 ```
 
-
-## macOS / Chainguard Notes
+## macOS / Chainguard Notes P2
 
 - Base image: this project now uses the Chainguard stable nginx image (`cgr.dev/chainguard/nginx:latest`) built so the nginx process can run as a non-root user.
 
@@ -539,8 +539,10 @@ sudo ip addr del 10.1.1.30/32 dev lo || true
   ```bash
   # Remove containers, images, volumes, and build cache
   docker system prune -a --volumes -f
+  docker volume prune -a -f
   # Remove build cache history
   docker buildx history rm --all
+  docker system df
   ```
 
 ## Post-Docker Reset Quick Fix
